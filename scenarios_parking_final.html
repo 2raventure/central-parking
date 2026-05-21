@@ -1,0 +1,131 @@
+
+<div style="background:#ffffff;padding:20px;font-family:Arial,sans-serif;font-size:14px;color:#1a1a18;max-width:580px">
+
+<div id="tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e8e6e0"></div>
+
+<div id="sc-content"></div>
+
+</div>
+
+<script>
+var SC = [
+  { id:'qt', label:'Quick wins', acc:'#3C3489', bg:'#EEEDFE',
+    temp:'Oui', budget:'Faible', lien:'Moyen',
+    spec:'Projet test, pas de travaux lourds. Priorité aux actions réversibles et sans chantier.',
+    qs:[ {q:'Projet temporaire ?', a:'Oui — bail précaire'}, {q:'Budget disponible ?', a:'Faible (moins de 10 k€)'}, {q:'Leviers retenus ?', a:'Végétalisation + Mobilité + Construction'} ],
+    fiches:[ {n:'Bacs végétaux transitoires', bg:'#EAF3DE', fg:'#27500A', cout:'Faible'}, {n:'Marquage au sol temporaire', bg:'#E6F1FB', fg:'#0C447C', cout:'Très faible'}, {n:'Signalétique trajet', bg:'#E1F5EE', fg:'#085041', cout:'Faible'}, {n:'Arceaux vélo', bg:'#E1F5EE', fg:'#085041', cout:'Faible'}, {n:'Jardin en kit', bg:'#EAF3DE', fg:'#27500A', cout:'Faible'} ]
+  },
+  { id:'veg', label:'Végétalisation', acc:'#27500A', bg:'#EAF3DE',
+    temp:'Non', budget:'Moyen', lien:'Fort',
+    spec:'Résidence avec association active, sol de pleine terre disponible, absence de pollution suspectée.',
+    qs:[ {q:'Sol disponible ?', a:'Pleine terre accessible'}, {q:'Pollution des sols ?', a:'Non ou inconnu'}, {q:'Dynamique sociale ?', a:'Fort — association active'} ],
+    fiches:[ {n:'Jardins partagés', bg:'#EAF3DE', fg:'#27500A', cout:'Faible à moyen'}, {n:'Potager collectif', bg:'#EAF3DE', fg:'#27500A', cout:'Faible'}, {n:'Zone végétalisée', bg:'#EAF3DE', fg:'#27500A', cout:'Moyen'}, {n:'Désimperméabiliser', bg:'#EAF3DE', fg:'#27500A', cout:'Moyen à élevé'} ]
+  },
+  { id:'mob', label:'Mobilité', acc:'#085041', bg:'#E1F5EE',
+    temp:'Non', budget:'Élevé', lien:'Moyen',
+    spec:'Parking ouvert sur l\'extérieur, piste cyclable à moins de 200 m, plusieurs résidents en VE.',
+    qs:[ {q:'Pistes cyclables ?', a:'Oui, à moins de 200 m'}, {q:'Véhicules électriques ?', a:'Oui — plusieurs résidents'}, {q:'Parking ouvert ?', a:'Oui — accès extérieur'} ],
+    fiches:[ {n:'Bornes recharge VE', bg:'#E1F5EE', fg:'#085041', cout:'Élevé'}, {n:'Local vélo et réparation', bg:'#E1F5EE', fg:'#085041', cout:'Moyen'}, {n:'Cheminements actifs', bg:'#E1F5EE', fg:'#085041', cout:'Faible à moyen'}, {n:'Auto-partage', bg:'#E1F5EE', fg:'#085041', cout:'Moyen à élevé'}, {n:'Arceaux vélo', bg:'#E1F5EE', fg:'#085041', cout:'Faible'} ]
+  },
+  { id:'ene', label:'Énergie', acc:'#633806', bg:'#FAEEDA',
+    temp:'Non', budget:'Élevé', lien:'Faible',
+    spec:'Surface supérieure à 1500 m², chauffage gaz, hors zone ABF. Obligation de solarisation applicable.',
+    qs:[ {q:'Surface du parking ?', a:'Plus de 1500 m² — obligation légale'}, {q:'Masques solaires ?', a:'Limités — bonne exposition'}, {q:'Mode de chauffage ?', a:'Gaz ou fioul — PAC possible'} ],
+    fiches:[ {n:'Ombrières photovoltaïques', bg:'#FAEEDA', fg:'#633806', cout:'Élevé'}, {n:'Panneaux PV au sol', bg:'#FAEEDA', fg:'#633806', cout:'Élevé'}, {n:'Pompe à chaleur collective', bg:'#FAEEDA', fg:'#633806', cout:'Élevé'} ]
+  },
+  { id:'con', label:'Construction', acc:'#0C447C', bg:'#E6F1FB',
+    temp:'Non', budget:'Élevé', lien:'Faible',
+    spec:'PLU favorable à la construction, objectif de densification résidentielle, foncier libérable.',
+    qs:[ {q:'PLU constructible ?', a:'Oui — zone U ou AU'}, {q:'Objectif principal ?', a:'Densification logements'}, {q:'Accord copropriété ?', a:'Oui ou en cours'} ],
+    fiches:[ {n:'Module logement préfabriqué', bg:'#E6F1FB', fg:'#0C447C', cout:'Très élevé'}, {n:'Module services collectifs', bg:'#E6F1FB', fg:'#0C447C', cout:'Élevé'}, {n:'Marquage temporaire', bg:'#E6F1FB', fg:'#0C447C', cout:'Très faible'} ]
+  },
+  { id:'pol', label:'Sol pollué', acc:'#3C3489', bg:'#EEEDFE',
+    temp:'Oui', budget:'Faible', lien:'Moyen',
+    spec:'Pollution suspectée, dalle béton uniquement. Uniquement des solutions sans contact avec la terre.',
+    qs:[ {q:'Pollution des sols ?', a:'Oui — suspicion confirmée'}, {q:'Type de surface ?', a:'Dalle béton uniquement'}, {q:'Budget et temporalité ?', a:'Faible et transitoire'} ],
+    fiches:[ {n:'Bacs végétaux transitoires', bg:'#EAF3DE', fg:'#27500A', cout:'Faible'}, {n:'Signalétique trajet', bg:'#E1F5EE', fg:'#085041', cout:'Faible'}, {n:'Arceaux vélo', bg:'#E1F5EE', fg:'#085041', cout:'Faible'}, {n:'Boîte à outils mobilité', bg:'#E1F5EE', fg:'#085041', cout:'Faible'}, {n:'Marquage temporaire', bg:'#E6F1FB', fg:'#0C447C', cout:'Très faible'} ]
+  },
+  { id:'multi', label:'Multileviers', acc:'#3C3489', bg:'#EEEDFE',
+    temp:'Non', budget:'Moyen', lien:'Fort',
+    spec:'Résidence urbaine dense, lien social fort, piste cyclable proche, pleine terre disponible.',
+    qs:[ {q:'Leviers retenus ?', a:'Végétalisation et Mobilité'}, {q:'Lien social et vélo ?', a:'Fort et piste à moins de 200 m'}, {q:'Budget et durée ?', a:'Moyen et projet pérenne'} ],
+    fiches:[ {n:'Zone végétalisée', bg:'#EAF3DE', fg:'#27500A', cout:'Moyen'}, {n:'Jardins partagés', bg:'#EAF3DE', fg:'#27500A', cout:'Faible à moyen'}, {n:'Local vélo et réparation', bg:'#E1F5EE', fg:'#085041', cout:'Moyen'}, {n:'Cheminements actifs', bg:'#E1F5EE', fg:'#085041', cout:'Faible à moyen'}, {n:'Potager collectif', bg:'#EAF3DE', fg:'#27500A', cout:'Faible'} ]
+  },
+  { id:'reconv', label:'Reconversion', acc:'#3C3489', bg:'#EEEDFE',
+    temp:'Non', budget:'Élevé', lien:'Moyen',
+    spec:'Taux d\'occupation inférieur à 40%, surface supérieure à 800 m², PLU non restrictif.',
+    qs:[ {q:'Taux d\'occupation ?', a:'Inférieur à 40%'}, {q:'Surface et PLU ?', a:'Plus de 800 m² et PLU favorable'}, {q:'Leviers retenus ?', a:'Végétalisation, Mobilité et Énergie'} ],
+    fiches:[ {n:'Zone végétalisée', bg:'#EAF3DE', fg:'#27500A', cout:'Moyen'}, {n:'Ombrières photovoltaïques', bg:'#FAEEDA', fg:'#633806', cout:'Élevé'}, {n:'Local vélo et réparation', bg:'#E1F5EE', fg:'#085041', cout:'Moyen'}, {n:'Bornes recharge VE', bg:'#E1F5EE', fg:'#085041', cout:'Élevé'}, {n:'Désimperméabiliser', bg:'#EAF3DE', fg:'#27500A', cout:'Moyen à élevé'} ]
+  }
+];
+
+var current = 'qt';
+
+function buildTabs() {
+  var el = document.getElementById('tabs');
+  var h = '';
+  SC.forEach(function(sc) {
+    h += '<button onclick="showSc(\'' + sc.id + '\')" id="tab-' + sc.id + '" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + sc.acc + ';background:' + sc.bg + ';color:' + sc.acc + ';font-family:Arial,sans-serif">' + sc.label + '</button>';
+  });
+  el.innerHTML = h;
+}
+
+function showSc(id) {
+  current = id;
+  var sc = SC.filter(function(s){ return s.id === id; })[0];
+
+  document.querySelectorAll('[id^="tab-"]').forEach(function(btn) {
+    var sid = btn.id.replace('tab-','');
+    var s = SC.filter(function(x){ return x.id === sid; })[0];
+    btn.style.background = sid === id ? s.acc : s.bg;
+    btn.style.color = sid === id ? '#ffffff' : s.acc;
+  });
+
+  var h = '';
+
+  h += '<div style="font-size:13px;color:#5f5e5a;line-height:1.55;padding:10px 13px;border:1px solid #e8e6e0;border-radius:8px;margin-bottom:14px">' + sc.spec + '</div>';
+
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">';
+  h += '<div style="background:#f1efe8;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Temporaire</div><div style="font-size:13px;font-weight:700;color:#1a1a18">' + sc.temp + '</div></div>';
+  h += '<div style="background:#f1efe8;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Budget</div><div style="font-size:13px;font-weight:700;color:#1a1a18">' + sc.budget + '</div></div>';
+  h += '<div style="background:#f1efe8;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Lien social</div><div style="font-size:13px;font-weight:700;color:#1a1a18">' + sc.lien + '</div></div>';
+  h += '</div>';
+
+  h += '<div style="display:flex;flex-direction:column;align-items:center;gap:0">';
+
+  h += '<div style="background:' + sc.acc + ';color:#ffffff;border-radius:8px;padding:10px 24px;text-align:center">';
+  h += '<div style="font-size:13px;font-weight:700">Parking résidentiel</div>';
+  h += '<div style="font-size:11px;opacity:.8;margin-top:2px">Point de départ</div>';
+  h += '</div>';
+
+  sc.qs.forEach(function(item) {
+    h += '<div style="width:1px;height:24px;background:#d3d1c7"></div>';
+    h += '<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #d3d1c7;margin-top:-1px"></div>';
+    h += '<div style="border:1px solid #d3d1c7;border-radius:8px;padding:10px 16px;width:280px;background:#ffffff;text-align:center">';
+    h += '<div style="font-size:11px;color:#888780;margin-bottom:3px">' + item.q + '</div>';
+    h += '<div style="font-size:13px;font-weight:700;color:' + sc.acc + '">' + item.a + '</div>';
+    h += '</div>';
+  });
+
+  h += '<div style="width:1px;height:24px;background:#d3d1c7"></div>';
+  h += '<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #d3d1c7;margin-top:-1px"></div>';
+
+  h += '<div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 10px">Fiches recommandées</div>';
+
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:7px;width:100%">';
+  sc.fiches.forEach(function(f) {
+    h += '<div style="border:1px solid ' + f.fg + '40;border-radius:8px;padding:9px 11px;background:' + f.bg + '">';
+    h += '<div style="font-size:12px;font-weight:700;color:' + f.fg + ';line-height:1.35;margin-bottom:4px">' + f.n + '</div>';
+    h += '<div style="font-size:10px;color:' + f.fg + ';opacity:.8">' + f.cout + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  h += '</div>';
+
+  document.getElementById('sc-content').innerHTML = h;
+}
+
+buildTabs();
+showSc('qt');
+</script>
