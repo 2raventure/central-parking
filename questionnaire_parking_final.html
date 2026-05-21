@@ -1,0 +1,269 @@
+
+<div id="root" style="background:#ffffff;padding:20px;font-family:Arial,sans-serif;font-size:14px;color:#1a1a18;max-width:540px"></div>
+
+<script>
+var state = { step: 0, leviers: [], answers: {}, mode: 'q', detail: null };
+
+var LEVIERS = [
+  { id:'veg', label:'Végétalisation',        desc:'Potager, pleine terre, perméabilité', icon:'🌿', acc:'#3B6D11', bg:'#EAF3DE' },
+  { id:'mob', label:'Mobilité durable',       desc:'Vélo, recharge, auto-partage',        icon:'🚲', acc:'#085041', bg:'#E1F5EE' },
+  { id:'ene', label:'Énergie et services',    desc:'Solaire, PAC, transition',             icon:'☀️', acc:'#633806', bg:'#FAEEDA' },
+  { id:'con', label:'Construction modulaire', desc:'Modules habitables ou collectifs',     icon:'🏗️', acc:'#0C447C', bg:'#E6F1FB' }
+];
+
+var QUESTIONS = [
+  { id:'temp', title:'Projet temporaire ou transitoire ?', sub:'',
+    opts:[{v:'oui',l:'Oui',d:'Test, bail précaire'},{v:'non',l:'Non',d:'Projet pérenne'},{v:'x',l:'Pas encore défini',d:''}] },
+  { id:'budget', title:'Budget identifié ?', sub:'',
+    opts:[{v:'f',l:'Faible (moins de 10 k€)',d:'Mobilier, signalétique'},{v:'m',l:'Moyen (10 à 50 k€)',d:'Travaux aménagement'},{v:'e',l:'Élevé (plus de 50 k€)',d:'Chantier structurant'},{v:'x',l:'Non défini',d:''}] },
+  { id:'lien', title:'Dynamique sociale dans la résidence ?', sub:'Association, gardien, médiateur...',
+    opts:[{v:'fort',l:'Forte',d:''},{v:'moyen',l:'Quelques initiatives',d:''},{v:'faible',l:'Peu ou pas',d:''}] },
+  { id:'veg_sol', lv:'veg', title:'Espaces de pleine terre disponibles ?', sub:'',
+    opts:[{v:'oui',l:'Oui',d:''},{v:'dalle',l:'Dalle uniquement',d:''},{v:'non',l:'Non',d:''}] },
+  { id:'veg_pol', lv:'veg', title:'Sols potentiellement pollués ?', sub:'Site industriel, ancien garage...',
+    opts:[{v:'non',l:'Non ou inconnu',d:''},{v:'oui',l:'Oui ou suspicion',d:'Diagnostic requis'}] },
+  { id:'mob_velo', lv:'mob', title:'Pistes cyclables à proximité ?', sub:'',
+    opts:[{v:'oui',l:'Oui (moins de 200 m)',d:''},{v:'proche',l:'200 à 500 m',d:''},{v:'non',l:'Non ou loin',d:''}] },
+  { id:'mob_ve', lv:'mob', title:'Résidents avec véhicule électrique ?', sub:'',
+    opts:[{v:'oui',l:'Oui, plusieurs',d:''},{v:'quelques',l:'Un ou deux',d:''},{v:'non',l:'Non ou peu probable',d:''}] },
+  { id:'mob_ouv', lv:'mob', title:'Parking ouvert sur l\'extérieur ?', sub:'',
+    opts:[{v:'oui',l:'Oui ou possible',d:''},{v:'non',l:'Non, résidentiel uniquement',d:''}] },
+  { id:'ene_surf', lv:'ene', title:'Surface du parking ?', sub:'Détermine l\'obligation de solarisation.',
+    opts:[{v:'p',l:'Moins de 500 m²',d:'Pas d\'obligation'},{v:'m',l:'500 à 1500 m²',d:''},{v:'g',l:'Plus de 1500 m²',d:'Obligation 2026'}] },
+  { id:'ene_chauf', lv:'ene', title:'Mode de chauffage du bâtiment ?', sub:'',
+    opts:[{v:'gz',l:'Gaz ou fioul',d:'PAC envisageable'},{v:'el',l:'Électrique',d:''},{v:'rcu',l:'Réseau de chaleur',d:'PAC peu pertinente'},{v:'x',l:'Inconnu',d:''}] },
+  { id:'con_plu', lv:'con', title:'PLU autorise des constructions ?', sub:'À vérifier en mairie.',
+    opts:[{v:'oui',l:'Oui',d:''},{v:'non',l:'Non',d:''},{v:'x',l:'À vérifier',d:''}] },
+  { id:'con_besoin', lv:'con', title:'Besoin principal d\'un module ?', sub:'',
+    opts:[{v:'log',l:'Logements',d:''},{v:'col',l:'Espace collectif',d:''},{v:'test',l:'Test temporaire',d:''}] }
+];
+
+var FICHES = [
+  {id:'f01',lv:'veg',n:'Désimperméabiliser des places',d:'Remplacer les revêtements imperméables par des matériaux drainants ou des noues végétalisées.',cout:'Moyen à élevé',dur:'3 à 6 mois',act:['Syndic','Bureau d\'études VRD','Paysagiste'],cond:['Pleine terre disponible','Sols non pollués','Accord AG'],k:['temp','bm','eaux']},
+  {id:'f02',lv:'veg',n:'Zone végétalisée',d:'Reconvertir des places sous-utilisées en espaces verts, jardins ou corridors écologiques.',cout:'Moyen',dur:'2 à 4 mois',act:['Paysagiste','Syndic','Collectivité'],cond:['Stationnement excédentaire','Accord résidents'],k:['lien','temp','eaux']},
+  {id:'f03',lv:'veg',n:'Potager collectif',d:'Bacs de culture potagère sur dalles, animés par les résidents.',cout:'Faible',dur:'1 à 2 mois',act:['Association résidente','Gardien'],cond:['Lien social existant','Bonne exposition'],k:['lien','temp','bf']},
+  {id:'f04',lv:'veg',n:'Bacs végétaux transitoires',d:'Bacs modulaires mobiles, réversibles, sans travaux lourds.',cout:'Faible',dur:'Moins de 1 mois',act:['Fournisseurs mobilier urbain'],cond:['Projet temporaire ou incertain'],k:['temp','bf']},
+  {id:'f05',lv:'veg',n:'Jardins partagés',d:'Parcelles gérées collectivement avec fonctionnement associatif.',cout:'Faible à moyen',dur:'2 à 3 mois',act:['Résidents','Association','Collectivité'],cond:['Lien social fort','Surface 50 m² minimum'],k:['lien','communaute']},
+  {id:'f06',lv:'mob',n:'Bornes de recharge VE',d:'Bornes de recharge pour véhicules électriques sur places dédiées.',cout:'Élevé',dur:'4 à 8 mois',act:['Opérateur VE','Syndic'],cond:['Demande résidents VE','Puissance réseau dispo'],k:['velec','be']},
+  {id:'f07',lv:'mob',n:'Cheminements piétons et vélos',d:'Circulations internes sécurisées pour les modes actifs.',cout:'Faible à moyen',dur:'2 à 3 mois',act:['Syndic','Bureau d\'études'],cond:['Pistes cyclables à proximité'],k:['velo','pieton']},
+  {id:'f08',lv:'mob',n:'Signalétique temps de trajet',d:'Affichage des temps de marche et vélo vers les points clés du quartier.',cout:'Faible',dur:'1 à 2 mois',act:['Graphiste','Syndic'],cond:['Destinations accessibles à pied'],k:['temp','velo','bf']},
+  {id:'f09',lv:'mob',n:'Local vélo et auto-réparation',d:'Local fermé pour stationnement vélo avec outils de réparation.',cout:'Moyen',dur:'3 à 5 mois',act:['Syndic','Associations vélo'],cond:['Piste cyclable proche'],k:['velo','services']},
+  {id:'f10',lv:'mob',n:'Arceaux vélo et trottinettes',d:'Stationnement sécurisé pour vélos et trottinettes.',cout:'Faible',dur:'2 à 4 semaines',act:['Syndic','Collectivité'],cond:['Piste cyclable à proximité'],k:['velo','bf']},
+  {id:'f11',lv:'mob',n:'Emplacements vélos cargos',d:'Places dimensionnées pour les vélos cargo et remorques.',cout:'Faible',dur:'2 à 4 semaines',act:['Syndic'],cond:['Espaces suffisamment larges'],k:['velo','cargo']},
+  {id:'f12',lv:'mob',n:'Dispositif auto-partage',d:'Places réservées et service de véhicules partagés.',cout:'Moyen à élevé',dur:'6 à 12 mois',act:['Opérateur auto-partage','AOM'],cond:['Parking ouvert sur extérieur','Lien AOM'],k:['partage','be']},
+  {id:'f13',lv:'mob',n:'Zone de covoiturage',d:'Places dédiées au covoiturage avec outils de mise en relation.',cout:'Faible',dur:'1 à 2 mois',act:['Syndic','AOM'],cond:['Ouverture sur extérieur'],k:['partage','bf']},
+  {id:'f14',lv:'mob',n:'Boîte à outils mobilité',d:'Panneau des ressources locales : transports, vélo, aides.',cout:'Faible',dur:'2 à 4 semaines',act:['Collectivité','AOM'],cond:['Services de proximité existants'],k:['services','bf']},
+  {id:'f15',lv:'ene',n:'Ombrières photovoltaïques',d:'Ombrières solaires au-dessus des places, productrices d\'électricité.',cout:'Élevé',dur:'6 à 18 mois',act:['Installateur PV','Syndic'],cond:['Surface 500 m² minimum','PLU compatible','Hors ABF'],k:['pv','be','oblig']},
+  {id:'f16',lv:'ene',n:'Panneaux PV au sol',d:'Panneaux solaires au sol sur espaces libérés.',cout:'Élevé',dur:'6 à 12 mois',act:['Installateur PV','Bureau d\'études'],cond:['Masques solaires limités','PLU compatible'],k:['pv','be']},
+  {id:'f17',lv:'ene',n:'Pompe à chaleur collective',d:'PAC au service du bâtiment résidentiel depuis l\'espace parking.',cout:'Élevé',dur:'6 à 12 mois',act:['Bureau d\'études thermique','Exploitant'],cond:['Chauffage gaz ou fioul actuel','Pas de réseau de chaleur proche'],k:['pac','be']},
+  {id:'f18',lv:'con',n:'Module logement préfabriqué',d:'Modules habitables sur la dalle pour densification douce.',cout:'Très élevé',dur:'12 à 24 mois',act:['Promoteur','Architecte'],cond:['PLU autorisant construction','Accord copropriété'],k:['logement','be','plu']},
+  {id:'f19',lv:'con',n:'Module services collectifs',d:'Module collectif : salle polyvalente, AMAP, ludothèque.',cout:'Élevé',dur:'8 à 18 mois',act:['Architecte','Association'],cond:['Besoin communautaire identifié','PLU compatible'],k:['communaute','be','plu']},
+  {id:'f20',lv:'con',n:'Marquage au sol temporaire',d:'Reconfiguration rapide par marquage temporaire pour tester de nouveaux usages.',cout:'Très faible',dur:'1 à 2 semaines',act:['Syndic','Artiste'],cond:['Projet transitoire'],k:['temp','bf']},
+  {id:'f21',lv:'con',n:'Jardin en kit',d:'Kits de jardinage modulaires clé en main, sans travaux.',cout:'Faible',dur:'Moins de 1 mois',act:['Fournisseur kit','Résidents'],cond:['Projet expérimental'],k:['temp','bf','lien']}
+];
+
+function getVisibleQuestions() {
+  return QUESTIONS.filter(function(q) { return !q.lv || state.leviers.indexOf(q.lv) >= 0; });
+}
+
+function computeScores() {
+  var a = state.answers, sel = state.leviers, sc = {};
+  FICHES.forEach(function(f) { sc[f.id] = 0; });
+  FICHES.forEach(function(f) {
+    if (sel.indexOf(f.lv) < 0) return;
+    var s = 10; var k = f.k;
+    if (a.temp === 'oui' && k.indexOf('temp') >= 0) s += 5;
+    if (a.budget === 'f' && k.indexOf('bf') >= 0) s += 4;
+    if (a.budget === 'm' && k.indexOf('bm') >= 0) s += 3;
+    if ((a.budget === 'e' || a.budget === 'x') && k.indexOf('be') >= 0) s += 2;
+    if (a.lien === 'fort' && k.indexOf('lien') >= 0) s += 5;
+    if (a.mob_velo === 'oui' && k.indexOf('velo') >= 0) s += 4;
+    if (a.mob_ve === 'oui' && k.indexOf('velec') >= 0) s += 5;
+    if (a.mob_ouv === 'oui' && k.indexOf('partage') >= 0) s += 4;
+    if (a.ene_surf === 'g' && k.indexOf('oblig') >= 0) s += 5;
+    if (a.con_plu === 'oui' && k.indexOf('plu') >= 0) s += 4;
+    if (a.con_besoin === 'log' && k.indexOf('logement') >= 0) s += 5;
+    if (a.con_besoin === 'col' && k.indexOf('communaute') >= 0) s += 5;
+    if (a.veg_pol === 'oui' && f.lv === 'veg' && k.indexOf('temp') < 0) s -= 4;
+    sc[f.id] = s;
+  });
+  return sc;
+}
+
+function getRecs() {
+  var sc = computeScores();
+  return FICHES.filter(function(f) { return state.leviers.indexOf(f.lv) >= 0; })
+    .sort(function(a, b) { return sc[b.id] - sc[a.id]; });
+}
+
+function getLv(id) { return LEVIERS.filter(function(l){ return l.id === id; })[0]; }
+
+function render() {
+  var root = document.getElementById('root');
+  if (state.mode === 'results') { renderResults(root); return; }
+
+  var qs = getVisibleQuestions();
+  var totalSteps = qs.length + 1;
+  var pct = Math.round((state.step / totalSteps) * 100);
+
+  if (state.step === 0) {
+    renderLeviers(root, pct, totalSteps);
+  } else {
+    var q = qs[state.step - 1];
+    if (!q) { state.mode = 'results'; renderResults(root); return; }
+    renderQuestion(root, q, pct, totalSteps);
+  }
+}
+
+function renderLeviers(root, pct, total) {
+  var h = progressBar(pct) + stepLabel(1, total);
+  h += '<div style="font-size:15px;font-weight:700;color:#1a1a18;margin-bottom:4px;line-height:1.4">Quels leviers vous intéressent ?</div>';
+  h += '<div style="font-size:12px;color:#5f5e5a;margin-bottom:16px">Sélectionnez un ou plusieurs domaines.</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">';
+  LEVIERS.forEach(function(lv) {
+    var on = state.leviers.indexOf(lv.id) >= 0;
+    h += '<div onclick="toggleLv(\'' + lv.id + '\')" style="border:' + (on ? '2px solid ' + lv.acc : '1px solid #d3d1c7') + ';border-radius:10px;padding:12px;cursor:pointer;background:' + (on ? lv.bg : '#ffffff') + '">';
+    h += '<div style="font-size:18px;margin-bottom:4px">' + lv.icon + '</div>';
+    h += '<div style="font-size:13px;font-weight:700;color:#1a1a18;margin-bottom:2px">' + lv.label + '</div>';
+    h += '<div style="font-size:11px;color:#5f5e5a">' + lv.desc + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  var canNext = state.leviers.length > 0;
+  h += navRow(false, canNext, 'next()');
+  root.innerHTML = h;
+}
+
+function renderQuestion(root, q, pct, total) {
+  var lv = q.lv ? getLv(q.lv) : null;
+  var acc = lv ? lv.acc : '#1D9E75';
+  var h = progressBar(pct) + stepLabel(state.step + 1, total);
+  if (lv) h += '<div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:' + lv.bg + ';color:' + lv.acc + ';margin-bottom:10px">' + lv.icon + ' ' + lv.label + '</div>';
+  h += '<div style="font-size:15px;font-weight:700;color:#1a1a18;margin-bottom:' + (q.sub ? '4px' : '14px') + ';line-height:1.4">' + q.title + '</div>';
+  if (q.sub) h += '<div style="font-size:12px;color:#5f5e5a;margin-bottom:14px">' + q.sub + '</div>';
+  h += '<div style="display:grid;gap:6px;margin-bottom:20px">';
+  q.opts.forEach(function(o) {
+    var on = state.answers[q.id] === o.v;
+    h += '<button onclick="pickAnswer(\'' + q.id + '\',\'' + o.v + '\')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border:' + (on ? '2px solid ' + acc : '1px solid #d3d1c7') + ';border-radius:8px;background:' + (on ? '#f0faf6' : '#ffffff') + ';cursor:pointer;text-align:left;width:100%;font-family:Arial,sans-serif">';
+    h += '<span style="width:16px;height:16px;min-width:16px;border-radius:50%;border:' + (on ? 'none' : '1.5px solid #aaa') + ';background:' + (on ? acc : 'transparent') + ';margin-top:2px;display:flex;align-items:center;justify-content:center">';
+    if (on) h += '<span style="width:5px;height:5px;background:#fff;border-radius:50%;display:block"></span>';
+    h += '</span>';
+    h += '<span><span style="font-size:13px;font-weight:700;color:#1a1a18;display:block">' + o.l + '</span>';
+    if (o.d) h += '<span style="font-size:11px;color:#5f5e5a">' + o.d + '</span>';
+    h += '</span></button>';
+  });
+  h += '</div>';
+  var canNext = !!state.answers[q.id];
+  h += navRow(true, canNext, 'next()');
+  root.innerHTML = h;
+}
+
+function renderResults(root) {
+  var recs = getRecs();
+  var byLv = {};
+  recs.forEach(function(f) { if (!byLv[f.lv]) byLv[f.lv] = []; byLv[f.lv].push(f); });
+
+  var h = '<div style="text-align:center;margin-bottom:20px">';
+  h += '<div style="font-size:16px;font-weight:700;color:#1a1a18;margin-bottom:4px">Vos fiches actions</div>';
+  h += '<div style="font-size:13px;color:#5f5e5a;margin-bottom:10px">' + recs.length + ' actions identifiées selon votre profil</div>';
+  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">';
+  state.leviers.forEach(function(lid) {
+    var lv = getLv(lid);
+    h += '<span style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;background:' + lv.bg + ';color:' + lv.acc + '">' + lv.icon + ' ' + lv.label + ' · ' + (byLv[lid] ? byLv[lid].length : 0) + '</span>';
+  });
+  h += '</div></div>';
+
+  state.leviers.forEach(function(lid) {
+    var lv = getLv(lid);
+    var fi = byLv[lid] || [];
+    if (!fi.length) return;
+    h += '<div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:' + lv.acc + ';margin-bottom:8px">' + lv.icon + ' ' + lv.label + '</div>';
+    h += '<div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Prioritaires</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-bottom:8px">';
+    fi.slice(0,3).forEach(function(f) { h += ficheCard(f, lv); });
+    h += '</div>';
+    if (fi.length > 3) {
+      h += '<div style="font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;margin-top:4px">Autres</div>';
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-bottom:8px">';
+      fi.slice(3).forEach(function(f) { h += ficheCard(f, lv); });
+      h += '</div>';
+    }
+    h += '<div style="border-top:1px solid #e8e6e0;margin:12px 0"></div>';
+  });
+
+  if (state.detail) {
+    var f = FICHES.filter(function(x){ return x.id === state.detail; })[0];
+    if (f) {
+      var lv = getLv(f.lv);
+      h += '<div style="border:1px solid #d3d1c7;border-radius:10px;padding:16px;margin-top:4px">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+      h += '<div style="font-size:15px;font-weight:700;color:#1a1a18">' + f.n + '</div>';
+      h += '<button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;color:#5f5e5a;font-size:18px;padding:0;line-height:1">×</button>';
+      h += '</div>';
+      h += '<span style="display:inline-block;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;background:' + lv.bg + ';color:' + lv.acc + ';margin-bottom:10px">' + lv.icon + ' ' + lv.label + '</span>';
+      h += '<div style="font-size:13px;color:#5f5e5a;line-height:1.6;margin-bottom:12px">' + f.d + '</div>';
+      h += '<div style="display:flex;gap:6px;margin-bottom:12px">';
+      h += '<span style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid #e8e6e0;color:#5f5e5a">Coût : ' + f.cout + '</span>';
+      h += '<span style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid #e8e6e0;color:#5f5e5a">Durée : ' + f.dur + '</span>';
+      h += '</div>';
+      h += '<div style="font-size:10px;font-weight:700;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Acteurs clés</div>';
+      h += '<ul style="list-style:none;margin-bottom:12px;padding:0">';
+      f.act.forEach(function(a) { h += '<li style="font-size:13px;color:#5f5e5a;padding:3px 0;border-bottom:1px solid #f1efe8;display:flex;gap:6px"><span style="color:#1D9E75">→</span>' + a + '</li>'; });
+      h += '</ul>';
+      h += '<div style="font-size:10px;font-weight:700;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Conditions</div>';
+      h += '<ul style="list-style:none;margin-bottom:14px;padding:0">';
+      f.cond.forEach(function(c) { h += '<li style="font-size:13px;color:#5f5e5a;padding:3px 0;border-bottom:1px solid #f1efe8;display:flex;gap:6px"><span style="color:#1D9E75">→</span>' + c + '</li>'; });
+      h += '</ul>';
+      h += '<button onclick="sendPrompt(\'Comment mettre en oeuvre la fiche ' + f.n + ' dans un parking résidentiel ? Détaille les étapes, acteurs et financements.\')" style="width:100%;padding:9px;border-radius:8px;border:1px solid #d3d1c7;background:#f1efe8;color:#1a1a18;cursor:pointer;font-size:13px;font-family:Arial,sans-serif">Approfondir cette fiche ↗</button>';
+      h += '</div>';
+    }
+  }
+
+  h += '<button onclick="restart()" style="display:block;margin:16px auto 0;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #d3d1c7;background:#f1efe8;color:#1a1a18;font-family:Arial,sans-serif">↺ Recommencer</button>';
+  root.innerHTML = h;
+}
+
+function ficheCard(f, lv) {
+  return '<div onclick="openDetail(\'' + f.id + '\')" style="border:1px solid #d3d1c7;border-radius:9px;padding:10px 12px;cursor:pointer;background:#ffffff">'
+    + '<div style="font-size:13px;font-weight:700;color:#1a1a18;line-height:1.35;margin-bottom:5px">' + f.n + '</div>'
+    + '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:' + lv.bg + ';color:' + lv.acc + '">' + f.cout + '</span>'
+    + '</div>';
+}
+
+function progressBar(pct) {
+  return '<div style="height:3px;background:#e8e6e0;border-radius:2px;margin-bottom:18px"><div style="height:3px;width:' + pct + '%;background:#1D9E75;border-radius:2px"></div></div>';
+}
+
+function stepLabel(n, total) {
+  return '<div style="font-size:11px;color:#888780;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">Étape ' + n + ' / ' + total + '</div>';
+}
+
+function navRow(showBack, canNext, nextFn) {
+  var h = '<div style="display:flex;justify-content:' + (showBack ? 'space-between' : 'flex-end') + ';align-items:center;margin-top:4px">';
+  if (showBack) h += '<button onclick="prev()" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #d3d1c7;background:#ffffff;color:#1a1a18;font-family:Arial,sans-serif">← Précédent</button>';
+  h += '<button onclick="' + nextFn + '" ' + (canNext ? '' : 'disabled') + ' style="padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:' + (canNext ? '#1D9E75' : '#ccc') + ';color:#ffffff;font-family:Arial,sans-serif">' + (canNext ? 'Suivant →' : 'Choisissez une option') + '</button>';
+  h += '</div>';
+  return h;
+}
+
+function toggleLv(id) {
+  var i = state.leviers.indexOf(id);
+  if (i >= 0) state.leviers.splice(i, 1); else state.leviers.push(id);
+  render();
+}
+
+function pickAnswer(qid, val) { state.answers[qid] = val; render(); }
+
+function next() {
+  var qs = getVisibleQuestions();
+  if (state.step < qs.length) { state.step++; render(); }
+  else { state.mode = 'results'; render(); }
+}
+
+function prev() { if (state.step > 0) { state.step--; render(); } }
+function openDetail(id) { state.detail = id; renderResults(document.getElementById('root')); }
+function closeDetail() { state.detail = null; renderResults(document.getElementById('root')); }
+function restart() { state = { step:0, leviers:[], answers:{}, mode:'q', detail:null }; render(); }
+
+render();
+</script>
