@@ -1,0 +1,357 @@
+
+<h2 class="sr-only">Module interactif de diagnostic et recommandations pour la réhabilitation d'un parking résidentiel</h2>
+
+<style>
+  :root {
+    --green: #3B6D11; --green-light: #EAF3DE; --green-mid: #639922;
+    --teal: #0F6E56; --teal-light: #E1F5EE; --teal-mid: #1D9E75;
+    --amber: #854F0B; --amber-light: #FAEEDA; --amber-mid: #BA7517;
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-mid: #378ADD;
+    --coral: #993C1D; --coral-light: #FAECE7; --coral-mid: #D85A30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wrap { padding: 1.5rem 0; max-width: 680px; }
+  .progress-bar { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; margin-bottom: 1.5rem; }
+  .progress-fill { height: 4px; background: var(--teal-mid); border-radius: 2px; transition: width 0.4s ease; }
+  .step-label { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 0.5rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .q-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 0.25rem; }
+  .q-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.25rem; line-height: 1.5; }
+  .levier-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; margin-bottom: 1rem; }
+  .options-grid { display: grid; gap: 8px; }
+  .opt-btn { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s; width: 100%; }
+  .opt-btn:hover { background: var(--color-background-secondary); border-color: var(--color-border-primary); }
+  .opt-btn.selected { border-color: var(--teal-mid); background: var(--teal-light); }
+  .opt-btn .opt-icon { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .opt-btn.selected .opt-icon { background: var(--teal-mid); border-color: var(--teal-mid); }
+  .opt-btn.selected .opt-icon::after { content: ''; width: 6px; height: 6px; background: white; border-radius: 50%; }
+  .opt-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--color-border-secondary); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .opt-btn.selected .opt-check { background: var(--teal-mid); border-color: var(--teal-mid); }
+  .opt-btn.selected .opt-check::after { content: '✓'; color: white; font-size: 11px; line-height: 1; }
+  .opt-text strong { font-size: 14px; font-weight: 500; color: var(--color-text-primary); display: block; margin-bottom: 2px; }
+  .opt-text span { font-size: 12px; color: var(--color-text-secondary); }
+  .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
+  .btn-nav { padding: 9px 20px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); transition: background 0.15s; }
+  .btn-nav:hover { background: var(--color-background-secondary); }
+  .btn-next { background: var(--teal-mid); color: white; border-color: var(--teal-mid); }
+  .btn-next:hover { background: var(--teal); border-color: var(--teal); }
+  .btn-next:disabled { opacity: 0.4; cursor: default; }
+  .phase-title { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 0.5rem; }
+  .levier-intro { border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+  .section-divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 1.25rem 0; }
+  .results-header { text-align: center; padding: 1rem 0 1.5rem; }
+  .results-header h2 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 0.5rem; }
+  .results-header p { font-size: 14px; color: var(--color-text-secondary); }
+  .score-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+  .score-pill { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .fiche-section { margin-bottom: 1.5rem; }
+  .fiche-section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px; letter-spacing: 0.03em; }
+  .fiches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .fiche-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 14px; background: var(--color-background-primary); cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+  .fiche-card:hover { border-color: var(--color-border-primary); transform: translateY(-1px); }
+  .fiche-card .fiche-icon { font-size: 20px; margin-bottom: 6px; }
+  .fiche-card .fiche-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); line-height: 1.4; margin-bottom: 4px; }
+  .fiche-card .fiche-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+  .fiche-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+  .fiche-modal.open { display: flex; }
+  .fiche-modal-inner { background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 1.5rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; border: 0.5px solid var(--color-border-tertiary); }
+  .modal-close { float: right; background: none; border: none; cursor: pointer; color: var(--color-text-secondary); font-size: 18px; }
+  .modal-title { font-size: 17px; font-weight: 500; margin-bottom: 0.5rem; color: var(--color-text-primary); }
+  .modal-desc { font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-info-row { display: flex; gap: 8px; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .modal-info-chip { font-size: 12px; padding: 4px 12px; border-radius: 10px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); }
+  .modal-section { margin-top: 1rem; }
+  .modal-section-title { font-size: 12px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+  .modal-list { list-style: none; }
+  .modal-list li { font-size: 13px; color: var(--color-text-secondary); padding: 4px 0; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; gap: 8px; }
+  .modal-list li::before { content: '→'; color: var(--teal-mid); flex-shrink: 0; }
+  .empty-state { text-align: center; padding: 2rem 1rem; color: var(--color-text-secondary); font-size: 14px; }
+  .restart-btn { display: block; margin: 1.5rem auto 0; padding: 9px 24px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .input-field { width: 100%; padding: 10px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; background: var(--color-background-primary); color: var(--color-text-primary); }
+  .input-field:focus { outline: none; border-color: var(--teal-mid); box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
+  .range-wrap { display: flex; align-items: center; gap: 12px; }
+  .range-wrap input[type=range] { flex: 1; }
+  .range-label { font-size: 14px; font-weight: 500; min-width: 70px; color: var(--color-text-primary); }
+  .levier-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .levier-card { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 14px; cursor: pointer; transition: all 0.15s; }
+  .levier-card:hover { background: var(--color-background-secondary); }
+  .levier-card.sel { border-width: 2px; }
+  .levier-card .lc-icon { font-size: 22px; margin-bottom: 6px; }
+  .levier-card .lc-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+  .levier-card .lc-desc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.4; }
+  .levier-card.sel.veg { border-color: var(--green-mid); background: var(--green-light); }
+  .levier-card.sel.mob { border-color: var(--teal-mid); background: var(--teal-light); }
+  .levier-card.sel.ene { border-color: var(--amber-mid); background: var(--amber-light); }
+  .levier-card.sel.cons { border-color: var(--blue-mid); background: var(--blue-light); }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<div class="fiche-modal" id="modal">
+  <div class="fiche-modal-inner" id="modal-content"></div>
+</div>
+
+<script>
+const LEVIERS = {
+  veg: { label: 'Végétalisation', color: 'green', icon: '🌿', className: 'veg' },
+  mob: { label: 'Mobilité durable', color: 'teal', icon: '🚲', className: 'mob' },
+  ene: { label: 'Énergie & services', color: 'amber', icon: '☀️', className: 'ene' },
+  cons: { label: 'Construction modulaire', color: 'blue', icon: '🏗', className: 'cons' }
+};
+
+const FICHES = [
+  { id: 'f01', levier: 'veg', icon: '💧', name: 'Désimperméabiliser des places', desc: "Remplacer les revêtements imperméables (enrobé, béton) par des matériaux perméables ou des noues végétalisées pour favoriser l'infiltration des eaux pluviales.", cout: 'Moyen à élevé', duree: '3-6 mois', acteurs: ['Syndic', 'Bureau d\'études VRD', 'Paysagiste'], conditions: ['Surface de pleine terre disponible', 'Absence de pollution des sols', 'Accord copropriété'], keys: ['temporaire', 'eaux', 'budget_moyen'] },
+  { id: 'f02', levier: 'veg', icon: '🌳', name: 'Zone végétalisée en lieu de parking', desc: "Reconvertir des places de stationnement sous-utilisées en espaces verts paysagers, corridors écologiques ou jardins collectifs.", cout: 'Moyen', duree: '2-4 mois', acteurs: ['Paysagiste', 'Syndic', 'Collectivité'], conditions: ['Taux de stationnement excédentaire', 'Accord des résidents', 'Sous-sol compatible'], keys: ['lien_social', 'temporaire', 'eaux'] },
+  { id: 'f03', levier: 'veg', icon: '🥕', name: 'Potager collectif', desc: "Aménager un ou plusieurs bacs de culture potagère sur les dalles ou dans les espaces dégagés, animés par les résidents.", cout: 'Faible', duree: '1-2 mois', acteurs: ['Association résidente', 'Gardien', 'Maraîchers urbains'], conditions: ['Lien social existant', 'Présence médiateur ou gardien', 'Exposition solaire suffisante'], keys: ['lien_social', 'temporaire'] },
+  { id: 'f04', levier: 'veg', icon: '🪴', name: 'Bacs végétaux transitoires', desc: "Installer des bacs modulaires mobiles pour végétaliser rapidement, en mode réversible, sans travaux lourds.", cout: 'Faible', duree: '< 1 mois', acteurs: ['Fournisseurs de mobilier urbain'], conditions: ['Projet temporaire ou incertain'], keys: ['temporaire', 'budget_faible'] },
+  { id: 'f05', levier: 'veg', icon: '🌻', name: 'Jardins & potagers partagés', desc: "Créer des parcelles gérées collectivement par les habitants, avec un fonctionnement associatif.", cout: 'Faible à moyen', duree: '2-3 mois', acteurs: ['Résidents', 'Association', 'Collectivité'], conditions: ['Lien social fort', 'Médiateur présent', 'Surface ≥ 50 m²'], keys: ['lien_social', 'communautaire'] },
+  { id: 'f06', levier: 'mob', icon: '⚡', name: 'Bornes de recharge électrique', desc: "Installer des bornes de recharge pour véhicules électriques sur des places dédiées, en lien avec la copropriété et les opérateurs.", cout: 'Élevé', duree: '4-8 mois', acteurs: ['Opérateurs (Izivia, etc.)', 'Syndic', 'Fournisseur d\'énergie'], conditions: ['Part modale VP électrique en hausse', 'Puissance réseau disponible', 'Accord copropriété'], keys: ['veh_elec', 'budget_eleve'] },
+  { id: 'f07', levier: 'mob', icon: '🚶', name: 'Cheminements piétons & vélos', desc: "Retravailler les circulations internes pour sécuriser et fluidifier les déplacements à pied et à vélo, avec une signalétique adaptée.", cout: 'Faible à moyen', duree: '2-3 mois', acteurs: ['Syndic', 'Bureau d\'études', 'Collectivité'], conditions: ['Pistes cyclables à proximité', 'Déficit de cheminements actifs identifié'], keys: ['velo', 'pietons'] },
+  { id: 'f08', levier: 'mob', icon: '🗺', name: 'Signalétique temps de trajet', desc: "Poser une signalétique sol et affiche indiquant les temps de trajet piéton/vélo vers les points clés du quartier.", cout: 'Faible', duree: '1-2 mois', acteurs: ['Graphiste', 'Syndic', 'Collectivité'], conditions: ['Destination clés à moins de 15 min à pied'], keys: ['temporaire', 'velo', 'budget_faible'] },
+  { id: 'f09', levier: 'mob', icon: '🔧', name: 'Local vélo sécurisé avec auto-réparation', desc: "Aménager un local fermé et sécurisé pour le stationnement vélo, équipé d'outils basiques de réparation.", cout: 'Moyen', duree: '3-5 mois', acteurs: ['Syndic', 'Associations vélo (ex : MDB)'], conditions: ['Distance piste cyclable < 500m', 'Demande résidents'], keys: ['velo', 'services'] },
+  { id: 'f10', levier: 'mob', icon: '🚲', name: 'Arceaux vélo & trottinettes', desc: "Installer des arceaux de stationnement vélo et trottinettes sécurisés, à l'abri des intempéries si possible.", cout: 'Faible', duree: '2-4 semaines', acteurs: ['Syndic', 'Collectivité (subvention possible)'], conditions: ['Piste cyclable à proximité'], keys: ['velo', 'budget_faible'] },
+  { id: 'f11', levier: 'mob', icon: '📦', name: 'Arceaux pour vélos cargos', desc: "Prévoir des emplacements dimensionnés pour les vélos cargo et remorques, de plus en plus présents en résidentiel.", cout: 'Faible', duree: '2-4 semaines', acteurs: ['Syndic'], conditions: ['Espaces suffisamment larges', 'Demande des résidents'], keys: ['velo', 'cargo'] },
+  { id: 'f12', levier: 'mob', icon: '🔄', name: 'Système d\'auto-partage', desc: "Organiser des places réservées et proposer un dispositif de véhicules partagés (voiture, vélo, vélo cargo, remorques).", cout: 'Moyen à élevé', duree: '6-12 mois', acteurs: ['Opérateur auto-partage', 'Syndic', 'AOM'], conditions: ['Parking ouvert à l\'extérieur', 'Lien avec AOM identifié', 'Usage mixte résidentiel/tertiaire'], keys: ['partage', 'budget_eleve'] },
+  { id: 'f13', levier: 'mob', icon: '🚗', name: 'Zone de covoiturage', desc: "Délimiter et signaler des places dédiées au covoiturage, avec affichage des outils territoriaux disponibles.", cout: 'Faible', duree: '1-2 mois', acteurs: ['Syndic', 'Collectivité', 'AOM'], conditions: ['Ouverture sur l\'extérieur', 'Lien avec AOM'], keys: ['partage', 'budget_faible'] },
+  { id: 'f14', levier: 'mob', icon: '📋', name: 'Boîte à outils mobilité territoire', desc: "Créer un panneau ou affichage recensant les ressources locales : où apprendre, s'équiper, tester, quelles aides TC et vélo.", cout: 'Faible', duree: '2-4 semaines', acteurs: ['Collectivité', 'AOM', 'Associations'], conditions: ['Services de proximité existants'], keys: ['services', 'budget_faible'] },
+  { id: 'f15', levier: 'ene', icon: '🌞', name: 'Ombrières photovoltaïques', desc: "Installer des ombrières solaires au-dessus des places de parking, produisant de l'électricité tout en protégeant les véhicules.", cout: 'Élevé', duree: '6-18 mois', acteurs: ['Installateur PV', 'Syndic', 'Fournisseur d\'énergie'], conditions: ['Surface ≥ 500 m²', 'Obligation légale (> 1500 m²)', 'PLU compatible', 'Pas en ABF'], keys: ['pv', 'budget_eleve', 'obligation_solaire'] },
+  { id: 'f16', levier: 'ene', icon: '⬛', name: 'Panneaux PV au sol', desc: "Installer des panneaux solaires au sol sur des espaces libérés par la suppression de places.", cout: 'Élevé', duree: '6-12 mois', acteurs: ['Installateur PV', 'Syndic', 'Bureau d\'études'], conditions: ['Masques solaires limités', 'PLU compatible', 'Pas en ABF'], keys: ['pv', 'budget_eleve'] },
+  { id: 'f17', levier: 'ene', icon: '🌡', name: 'Module de pompe à chaleur', desc: "Intégrer une PAC collective au service du bâtiment résidentiel, tirant parti de l'espace du parking.", cout: 'Élevé', duree: '6-12 mois', acteurs: ['Bureau d\'études thermique', 'Syndic', 'Exploitant'], conditions: ['Chauffage collectif actuel au gaz/fioul', 'Pas de RCU à 1km'], keys: ['pac', 'budget_eleve'] },
+  { id: 'f18', levier: 'cons', icon: '🏠', name: 'Module préfabriqué logement', desc: "Installer un ou plusieurs modules préfabriqués habitables sur la dalle du parking, dans le cadre d'une densification douce.", cout: 'Très élevé', duree: '12-24 mois', acteurs: ['Promoteur', 'Architecte', 'Collectivité'], conditions: ['PLU autorisant la construction', 'Objectif de densification', 'Accord copropriété'], keys: ['logement', 'budget_eleve', 'plu'] },
+  { id: 'f19', levier: 'cons', icon: '🏛', name: 'Module pour services collectifs', desc: "Aménager un module à usage collectif : salle polyvalente, AMAP, ludothèque, espace associatif.", cout: 'Élevé', duree: '8-18 mois', acteurs: ['Architecte', 'Association', 'Collectivité'], conditions: ['Besoin communautaire identifié', 'PLU compatible', 'Surface disponible'], keys: ['communautaire', 'budget_eleve', 'plu'] },
+  { id: 'f20', levier: 'cons', icon: '🖌', name: 'Marquage au sol temporaire', desc: "Reconfigurer rapidement la disposition du parking par marquage au sol temporaire pour tester de nouveaux usages.", cout: 'Très faible', duree: '1-2 semaines', acteurs: ['Syndic', 'Artiste / signalétique'], conditions: ['Projet transitoire ou phase test'], keys: ['temporaire', 'budget_faible'] },
+  { id: 'f21', levier: 'cons', icon: '🌱', name: 'Jardin en kit', desc: "Déployer des kits de jardinage modulaires clé en main pour une végétalisation rapide, sans travaux.", cout: 'Faible', duree: '< 1 mois', acteurs: ['Fournisseur kit', 'Résidents'], conditions: ['Projet expérimental ou transitoire'], keys: ['temporaire', 'budget_faible', 'lien_social'] }
+];
+
+const QUESTIONS = [
+  { id: 'levier', phase: 'intro', type: 'multi_levier', title: 'Quels leviers vous intéressent le plus ?', sub: 'Sélectionnez un ou plusieurs domaines prioritaires pour votre projet.', required: true },
+  { id: 'temporaire', phase: 'generique', type: 'radio', title: 'Votre projet est-il temporaire ou transitoire ?', sub: 'Cela influence fortement les types d\'aménagements recommandés.', options: [ { val: 'oui', label: 'Oui', desc: 'Test, occupation transitoire, bail précaire' }, { val: 'non', label: 'Non', desc: 'Projet pérenne, travaux définitifs' }, { val: 'incertain', label: 'Incertain', desc: 'Pas encore défini' } ] },
+  { id: 'budget', phase: 'generique', type: 'radio', title: 'Budget identifié pour la transformation ?', sub: '', options: [ { val: 'faible', label: 'Faible (< 10 k€)', desc: 'Actions légères, mobilier, signalétique' }, { val: 'moyen', label: 'Moyen (10-50 k€)', desc: 'Travaux d\'aménagement' }, { val: 'eleve', label: 'Élevé (> 50 k€)', desc: 'Chantier structurant' }, { val: 'inconnu', label: 'Pas encore défini', desc: '' } ] },
+  { id: 'lien_social', phase: 'generique', type: 'radio', title: 'Existe-t-il une dynamique sociale active dans la résidence ?', sub: 'Association de résidents, gardien, médiateur, liens de voisinage...', options: [ { val: 'fort', label: 'Oui, c\'est une force du projet', desc: '' }, { val: 'moyen', label: 'Quelques initiatives', desc: '' }, { val: 'faible', label: 'Peu ou pas', desc: '' } ] },
+  { id: 'veg_sol', phase: 'veg', levier: 'veg', type: 'radio', title: 'Des espaces de pleine terre sont-ils disponibles ou libérables ?', sub: '', options: [ { val: 'oui', label: 'Oui', desc: '' }, { val: 'dalle', label: 'Dalle uniquement', desc: 'Végétalisation sur structure seulement' }, { val: 'non', label: 'Non', desc: '' } ] },
+  { id: 'veg_pollution', phase: 'veg', levier: 'veg', type: 'radio', title: 'Les sols sont-ils potentiellement pollués ?', sub: 'Site industriel antérieur, garage historique, zone urbaine ancienne...', options: [ { val: 'non', label: 'Non / inconnu', desc: '' }, { val: 'oui', label: 'Oui ou suspicion', desc: 'Diagnostic sol requis avant tout projet' } ] },
+  { id: 'mob_velo', phase: 'mob', levier: 'mob', type: 'radio', title: 'Y a-t-il des pistes cyclables à proximité immédiate ?', sub: '', options: [ { val: 'oui', label: 'Oui (< 200 m)', desc: '' }, { val: 'proche', label: 'Proches (200-500 m)', desc: '' }, { val: 'non', label: 'Non ou loin', desc: '' } ] },
+  { id: 'mob_veh_elec', phase: 'mob', levier: 'mob', type: 'radio', title: 'Des résidents disposent-ils déjà d\'un véhicule électrique ?', sub: '', options: [ { val: 'oui', label: 'Oui, plusieurs', desc: '' }, { val: 'quelques', label: 'Un ou deux', desc: '' }, { val: 'non', label: 'Non / peu probable', desc: '' } ] },
+  { id: 'mob_ouverture', phase: 'mob', levier: 'mob', type: 'radio', title: 'Le parking est-il ouvert ou ouvrable sur l\'extérieur ?', sub: 'Possibilité d\'accès pour des non-résidents, auto-partage, covoiturage...', options: [ { val: 'oui', label: 'Oui ou possible', desc: '' }, { val: 'non', label: 'Non, usage exclusivement résidentiel', desc: '' } ] },
+  { id: 'ene_surface', phase: 'ene', levier: 'ene', type: 'radio', title: 'Quelle est la surface approximative du parking ?', sub: 'Détermine l\'éligibilité à l\'obligation de solarisation (loi AGEC).',  options: [ { val: 'petit', label: '< 500 m²', desc: 'Pas d\'obligation légale' }, { val: 'moyen', label: '500-1 500 m²', desc: '' }, { val: 'grand', label: '> 1 500 m²', desc: 'Obligation de solarisation à partir de 2026' } ] },
+  { id: 'ene_chauffage', phase: 'ene', levier: 'ene', type: 'radio', title: 'Mode de chauffage actuel du bâtiment ?', sub: '', options: [ { val: 'gaz_fioul', label: 'Gaz ou fioul', desc: 'Transition PAC envisageable' }, { val: 'elec', label: 'Électrique', desc: '' }, { val: 'rcu', label: 'Réseau de chaleur (RCU)', desc: 'PAC peu pertinente' }, { val: 'inconnu', label: 'Inconnu', desc: '' } ] },
+  { id: 'cons_plu', phase: 'cons', levier: 'cons', type: 'radio', title: 'Le PLU permet-il des constructions sur la zone ?', sub: 'À vérifier en mairie ou géoportail urbanisme.', options: [ { val: 'oui', label: 'Oui', desc: '' }, { val: 'non', label: 'Non', desc: '' }, { val: 'inconnu', label: 'À vérifier', desc: '' } ] },
+  { id: 'cons_besoin', phase: 'cons', levier: 'cons', type: 'radio', title: 'Quel besoin principal pour un module construit ?', sub: '', options: [ { val: 'logement', label: 'Logements supplémentaires', desc: '' }, { val: 'communautaire', label: 'Espace collectif (salle, AMAP...)', desc: '' }, { val: 'test', label: 'Test / occupation temporaire', desc: '' } ] }
+];
+
+let state = { answers: {}, step: 0, mode: 'questionnaire' };
+
+function getVisibleQuestions() {
+  const sel = state.answers.levier || [];
+  return QUESTIONS.filter(q => {
+    if (!q.levier) return true;
+    return sel.includes(q.levier);
+  });
+}
+
+function computeScore() {
+  const a = state.answers;
+  const leviers = a.levier || [];
+  const scores = {};
+  FICHES.forEach(f => { scores[f.id] = 0; });
+
+  FICHES.forEach(f => {
+    if (!leviers.includes(f.levier)) return;
+    let s = 10;
+    const k = f.keys || [];
+    if (a.temporaire === 'oui' && k.includes('temporaire')) s += 5;
+    if (a.budget === 'faible' && k.includes('budget_faible')) s += 4;
+    if (a.budget === 'moyen' && k.includes('budget_moyen')) s += 3;
+    if ((a.budget === 'eleve' || a.budget === 'inconnu') && k.includes('budget_eleve')) s += 3;
+    if (a.lien_social === 'fort' && k.includes('lien_social')) s += 5;
+    if (a.mob_velo === 'oui' && k.includes('velo')) s += 4;
+    if (a.mob_veh_elec === 'oui' && k.includes('veh_elec')) s += 5;
+    if (a.mob_ouverture === 'oui' && k.includes('partage')) s += 4;
+    if (a.ene_surface === 'grand' && k.includes('obligation_solaire')) s += 5;
+    if (a.cons_plu === 'oui' && k.includes('plu')) s += 4;
+    if (a.cons_besoin === 'logement' && k.includes('logement')) s += 5;
+    if (a.cons_besoin === 'communautaire' && k.includes('communautaire')) s += 5;
+    if (a.veg_pollution === 'oui' && f.levier === 'veg' && !k.includes('temporaire')) s -= 4;
+    scores[f.id] = s;
+  });
+  return scores;
+}
+
+function getRecommended() {
+  const scores = computeScore();
+  return FICHES
+    .filter(f => (state.answers.levier || []).includes(f.levier))
+    .sort((a, b) => scores[b.id] - scores[a.id]);
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (state.mode === 'results') { renderResults(app); return; }
+  const qs = getVisibleQuestions();
+  const q = qs[state.step];
+  if (!q) { state.mode = 'results'; renderResults(app); return; }
+  const pct = Math.round((state.step / qs.length) * 100);
+  let phaseLabel = q.phase === 'intro' ? 'Cadrage général' : q.phase === 'generique' ? 'Contexte projet' : LEVIERS[q.phase]?.label || '';
+  let levierColor = q.levier ? LEVIERS[q.levier].color : 'teal';
+  let bgVar = `var(--${levierColor}-light)`;
+  let cVar = `var(--${levierColor})`;
+  let html = `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="step-label">Question ${state.step + 1} / ${qs.length}</div>`;
+  if (q.levier) {
+    html += `<div class="levier-badge" style="background:${bgVar};color:${cVar}">${LEVIERS[q.levier].icon} ${LEVIERS[q.levier].label}</div>`;
+  }
+  html += `<div class="q-title">${q.title}</div>`;
+  if (q.sub) html += `<div class="q-sub">${q.sub}</div>`;
+
+  if (q.type === 'multi_levier') {
+    const sel = state.answers.levier || [];
+    html += `<div class="levier-selector">`;
+    Object.entries(LEVIERS).forEach(([key, lv]) => {
+      const isSel = sel.includes(key);
+      html += `<div class="levier-card ${isSel ? 'sel ' + lv.className : ''}" onclick="toggleLevier('${key}')">
+        <div class="lc-icon">${lv.icon}</div>
+        <div class="lc-name">${lv.label}</div>
+        <div class="lc-desc">${key === 'veg' ? 'Végétalisation, potager, perméabilité' : key === 'mob' ? 'Vélo, recharge, auto-partage' : key === 'ene' ? 'Solaire, PAC, transition énergétique' : 'Modules habitables ou collectifs'}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  } else if (q.type === 'radio') {
+    html += `<div class="options-grid">`;
+    q.options.forEach(opt => {
+      const isSel = state.answers[q.id] === opt.val;
+      html += `<button class="opt-btn ${isSel ? 'selected' : ''}" onclick="setAnswer('${q.id}','${opt.val}')">
+        <span class="opt-icon"></span>
+        <span class="opt-text"><strong>${opt.label}</strong>${opt.desc ? `<span>${opt.desc}</span>` : ''}</span>
+      </button>`;
+    });
+    html += `</div>`;
+  }
+
+  const canNext = q.type === 'multi_levier' ? (state.answers.levier || []).length > 0 : !!state.answers[q.id];
+  html += `<div class="nav-row">
+    ${state.step > 0 ? `<button class="btn-nav" onclick="prevStep()">← Précédent</button>` : `<span></span>`}
+    <button class="btn-nav btn-next" onclick="nextStep()" ${!canNext ? 'disabled' : ''}>${state.step === qs.length - 1 ? 'Voir mes fiches actions ↗' : 'Suivant →'}</button>
+  </div>`;
+  app.innerHTML = html;
+}
+
+function renderResults(app) {
+  const recs = getRecommended();
+  const byLevier = {};
+  recs.forEach(f => { if (!byLevier[f.levier]) byLevier[f.levier] = []; byLevier[f.levier].push(f); });
+  const scores = computeScore();
+  const leviersSel = state.answers.levier || [];
+
+  let html = `<div class="results-header">
+    <h2>Vos fiches actions</h2>
+    <p>${recs.length} actions identifiées selon votre profil</p>
+    <div class="score-pills">`;
+  leviersSel.forEach(l => {
+    const lv = LEVIERS[l];
+    html += `<span class="score-pill" style="background:var(--${lv.color}-light);color:var(--${lv.color})">${lv.icon} ${lv.label} · ${(byLevier[l]||[]).length} actions</span>`;
+  });
+  html += `</div></div>`;
+
+  leviersSel.forEach(l => {
+    const lv = LEVIERS[l];
+    const fiches = (byLevier[l] || []);
+    if (!fiches.length) return;
+    const top = fiches.slice(0, 3);
+    const rest = fiches.slice(3);
+    html += `<div class="fiche-section">
+      <div class="fiche-section-title" style="color:var(--${lv.color})">${lv.icon} ${lv.label}</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px;letter-spacing:0.03em">RECOMMANDÉES EN PRIORITÉ</div>
+      <div class="fiches-grid">`;
+    top.forEach(f => {
+      html += ficheCard(f, lv);
+    });
+    html += `</div>`;
+    if (rest.length) {
+      html += `<div style="font-size:11px;color:var(--color-text-tertiary);margin:12px 0 8px;letter-spacing:0.03em">AUTRES ACTIONS POSSIBLES</div>
+        <div class="fiches-grid">`;
+      rest.forEach(f => { html += ficheCard(f, lv); });
+      html += `</div>`;
+    }
+    html += `</div><hr class="section-divider">`;
+  });
+
+  html += `<button class="restart-btn" onclick="restart()">↺ Recommencer le diagnostic</button>`;
+  app.innerHTML = html;
+}
+
+function ficheCard(f, lv) {
+  return `<div class="fiche-card" onclick="openModal('${f.id}')">
+    <div class="fiche-icon">${f.icon}</div>
+    <div class="fiche-name">${f.name}</div>
+    <span class="fiche-tag" style="background:var(--${lv.color}-light);color:var(--${lv.color})">${f.cout}</span>
+  </div>`;
+}
+
+function openModal(id) {
+  const f = FICHES.find(x => x.id === id);
+  if (!f) return;
+  const lv = LEVIERS[f.levier];
+  const m = document.getElementById('modal');
+  const mc = document.getElementById('modal-content');
+  mc.innerHTML = `
+    <button class="modal-close" onclick="closeModal()" aria-label="Fermer">✕</button>
+    <div class="fiche-icon" style="font-size:28px;margin-bottom:8px">${f.icon}</div>
+    <div class="modal-title">${f.name}</div>
+    <div style="margin-bottom:10px"><span class="fiche-tag" style="background:var(--${lv.color}-light);color:var(--${lv.color})">${lv.icon} ${lv.label}</span></div>
+    <div class="modal-desc">${f.desc}</div>
+    <div class="modal-info-row">
+      <span class="modal-info-chip">💰 ${f.cout}</span>
+      <span class="modal-info-chip">⏱ ${f.duree}</span>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Acteurs clés</div>
+      <ul class="modal-list">${f.acteurs.map(a => `<li>${a}</li>`).join('')}</ul>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Conditions préalables</div>
+      <ul class="modal-list">${f.conditions.map(c => `<li>${c}</li>`).join('')}</ul>
+    </div>
+    <div style="margin-top:1.25rem">
+      <button onclick="sendPrompt('Dis-m\\'en plus sur la fiche action « ${f.name} » et comment la mettre en oeuvre dans un parking résidentiel')" style="width:100%;padding:10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;font-size:13px">Approfondir cette fiche ↗</button>
+    </div>`;
+  m.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function toggleLevier(key) {
+  const curr = state.answers.levier || [];
+  const idx = curr.indexOf(key);
+  if (idx >= 0) curr.splice(idx, 1); else curr.push(key);
+  state.answers.levier = [...curr];
+  render();
+}
+
+function setAnswer(id, val) {
+  state.answers[id] = val;
+  render();
+}
+
+function nextStep() {
+  const qs = getVisibleQuestions();
+  if (state.step < qs.length - 1) { state.step++; render(); }
+  else { state.mode = 'results'; render(); }
+}
+
+function prevStep() {
+  if (state.step > 0) { state.step--; render(); }
+}
+
+function restart() {
+  state = { answers: {}, step: 0, mode: 'questionnaire' };
+  render();
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+render();
+</script>
